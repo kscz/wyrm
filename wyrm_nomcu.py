@@ -155,30 +155,30 @@ class BaseSoC(SoCMini):
         s_shared_wdat = self.ctrl_signals.wdat
 
         self.add_ledpanel(
-            rgb_output=platform.request("rgb_output", 4),
+            rgb_output=platform.request("rgb_output", 1),
             select_line=0,
             shared_output=platform.request('shared_output'))
         self.add_ledpanel(
-            rgb_output=platform.request("rgb_output", 3),
+            rgb_output=platform.request("rgb_output", 2),
             select_line=1)
         self.add_ledpanel(
-            rgb_output=platform.request("rgb_output", 2),
+            rgb_output=platform.request("rgb_output", 3),
             select_line=2)
         self.add_ledpanel(
-            rgb_output=platform.request("rgb_output", 1),
+            rgb_output=platform.request("rgb_output", 4),
             select_line=3)
         self.add_ledpanel(
             rgb_output=platform.request("rgb_output", 5),
             select_line=4)
         self.add_ledpanel(
             rgb_output=platform.request("rgb_output", 6),
-            select_line=4) #review select_line=5
+            select_line=5)
         self.add_ledpanel(
             rgb_output=platform.request("rgb_output", 7),
-            select_line=4) #review select_line=6
+            select_line=6)
         self.add_ledpanel(
             rgb_output=platform.request("rgb_output", 8),
-            select_line=4) #review select_line=7
+            select_line=7)
 
         # CRG --------------------------------------------------------------------------------------
         self.crg = _CRG(platform, int(sys_clk_freq),
