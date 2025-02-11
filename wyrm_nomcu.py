@@ -218,48 +218,42 @@ class BaseSoC(SoCMini):
 
         udp_rx = udp_core.udp.rx.source
 
-        s_udp_reset = Signal()
-        s_udp_source_valid = Signal()
-        s_udp_source_last = Signal()
-        s_udp_source_ready = Signal()
-        s_udp_source_src_port = Signal(16)
-        s_udp_source_dst_port = Signal(16)
-        s_udp_source_ip_address = Signal(32)
-        s_udp_source_length = Signal(16)
-        s_udp_source_data = Signal(32)
-        s_udp_source_error = Signal(4)
-        s_udp_led = Signal()
-        self.specials += Instance("udp_panel_writer",
-            i_clk = ClockSignal(),
-            i_reset = s_udp_reset,
-            i_udp_source_valid = s_udp_source_valid,
-            i_udp_source_last = s_udp_source_last,
-            o_udp_source_ready = s_udp_source_ready,
-            i_udp_source_src_port = s_udp_source_src_port,
-            i_udp_source_dst_port = s_udp_source_dst_port,
-            i_udp_source_ip_address = s_udp_source_ip_address,
-            i_udp_source_length = s_udp_source_length,
-            i_udp_source_data = s_udp_source_data,
-            i_udp_source_error = s_udp_source_error,
-            o_ctrl_en = s_shared_en,
-            o_ctrl_addr = s_shared_addr,
-            o_ctrl_wdat = s_shared_wdat,
-            o_led_reg = s_udp_led,
+        udp_panel_writer = Instance("udp_panel_writer",
+            Instance.Input('clk', ClockSignal()),
+            Instance.Input('reset'),
+            Instance.Input('udp_source_valid'),
+            Instance.Input('udp_source_last'),
+            Instance.Output('udp_source_ready'),
+            Instance.Input('udp_source_src_port', Signal(16)),
+            Instance.Input('udp_source_dst_port', Signal(16)),
+            Instance.Input('udp_source_ip_address', Signal(32)),
+            Instance.Input('udp_source_length', Signal(16)),
+            Instance.Input('udp_source_data', Signal(32)),
+            Instance.Input('udp_source_error', Signal(4)),
+            Instance.Output('ctrl_en', s_shared_en),
+            Instance.Output('ctrl_addr', s_shared_addr),
+            Instance.Output('ctrl_wdat', s_shared_wdat),
+            Instance.Output('led_reg'),
         )
 
-        self.comb += s_udp_reset.eq(0)
-        self.sync += s_udp_source_valid.eq(udp_rx.valid)
-        self.sync += s_udp_source_last.eq(udp_rx.last)
-        self.sync += udp_rx.ready.eq(s_udp_source_ready)
-        self.sync += s_udp_source_dst_port.eq(udp_rx.param.dst_port)
-        self.sync += s_udp_source_src_port.eq(15)
-        self.sync += s_udp_source_data.eq(udp_rx.payload.data)
-        self.sync += s_udp_source_error.eq(udp_rx.payload.error)
+        self.specials += udp_panel_writer
+
+        self.comb += udp_panel_writer.get_io('reset').eq(0)
+
+        self.sync += [
+            udp_panel_writer.get_io('udp_source_valid').eq(udp_rx.valid),
+            udp_panel_writer.get_io('udp_source_last').eq(udp_rx.last),
+            udp_rx.ready.eq(udp_panel_writer.get_io('udp_source_ready')),
+            udp_panel_writer.get_io('udp_source_dst_port').eq(udp_rx.param.dst_port),
+            udp_panel_writer.get_io('udp_source_src_port').eq(15),
+            udp_panel_writer.get_io('udp_source_data').eq(udp_rx.payload.data),
+            udp_panel_writer.get_io('udp_source_error').eq(udp_rx.payload.error),
+        ]
 
         s_test_port = Signal()
         self.comb += s_test_port.eq((udp_core.udp.rx.source.param.dst_port[15] == 1) & udp_core.udp.rx.source.valid)
         led = platform.request("user_led_n", 0)
-        self.comb += led.eq(s_udp_led)
+        self.comb += led.eq(udp_panel_writer.get_io('led_reg'))
 
         # SPI Flash --------------------------------------------------------------------------------
         if with_spi_flash:
