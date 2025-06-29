@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
+import argparse
 import socket
 import sys
 import time
 import numpy as np
 import cv2
 
-UDP_IP = sys.argv[2]
+parser = argparse.ArgumentParser(
+        prog='send_sync_vid',
+        description='Send the same video to multiple synchronized wyrm eyes')
+
+parser.add_argument('filename')
+parser.add_argument("--ip", action="extend", nargs="+", type=str)
+
+args = parser.parse_args()
+
 UDP_PORT = 0x80ff
 
 # Detect endianness and create vectorized htonl
@@ -18,12 +27,13 @@ def htonl_vec(arr):
         return arr.byteswap()
     return arr
 
-# We send 4 lines at a time, and we only access one 64x64 segment at a time
-fbuf = np.zeros((64*4), dtype='>u4')  # Use big-endian dtype
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+# We send 4 lines at a time, and we only access one 64x64 segment at a time
+fbuf = np.zeros((64*4), dtype='>u4')  # Use big-endian dtype
+
 # Open the stream using OpenCV
-vidcap = cv2.VideoCapture(sys.argv[1])
+vidcap = cv2.VideoCapture(args.filename)
 fps = vidcap.get(cv2.CAP_PROP_FPS)
 frame_time = 1.0/float(fps)
 
@@ -95,8 +105,8 @@ while True:
                 tosend.append(0)
                 tosend.append(0)
                 tosend.extend(fbuf)  # Already in network byte order
-                s.sendto(tosend, (UDP_IP, UDP_PORT))
-                #time.sleep(0.0005) # The FPGA can't keep up currently - give it a pause
+                for ip in args.ip:
+                    s.sendto(tosend, (ip, UDP_PORT))
         
         # Frame timing management
         end_time = time.monotonic()
